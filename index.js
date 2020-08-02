@@ -21,11 +21,13 @@ const convertToWebp = async (img, destination, imgName, extension) => {
 }
 
 const resizeAndConvertSingleImage = async (img, destination, width, extension) => {
+  const imageClone = img.clone();
   const imgName = SIZES[width]
   // resize and save
-  await img
+  
+  await imageClone
     .resize(width, Jimp.AUTO)
-    .quality(80)
+    .quality(100)
     .writeAsync(`${destination}/${imgName}.${extension}`);
 
   // convert to webp
@@ -49,8 +51,7 @@ console.log(process.env.MESSAGE_QUEUE);
 const app = new MicroMQ({
   name: 'convert',
   rabbit: {
-    url: 'amqp://guest:guest@rabbitmq:5672',
-    // url: process.env.MESSAGE_QUEUE
+    url: process.env.MESSAGE_QUEUE
   },
 });
 
