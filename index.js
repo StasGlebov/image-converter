@@ -1,67 +1,67 @@
-const MicroMQ = require('micromq');
-const Jimp = require('jimp');
-const imagemin = require('imagemin');
-const imageminWebp = require('imagemin-webp');
+const MicroMQ = require("micromq");
+const Jimp = require("jimp");
+const imagemin = require("imagemin");
+const imageminWebp = require("imagemin-webp");
 
 // const ERROR_NOT_SUPPORTED = 'Whoops! File extension not supported!' // TODO
 const SIZES = {
-  '1920': 'x-large',
-  '1280': 'large',
-  '768': 'medium',
-  '540': 'small',
-  '50': 'thumb'
-}
-const ORIGINAL_NAME = 'original'
+  "1920": "x-large",
+  "1280": "large",
+  "768": "medium",
+  "540": "small",
+  "50": "thumb"
+};
+const ORIGINAL_NAME = "original";
 
 const convertToWebp = async (img, destination, imgName, extension) => {
   await imagemin([`${destination}/${imgName}.${extension}`], {
     destination,
     plugins: [ imageminWebp({quality: 80}) ]
   });
-}
+};
 
 const resizeAndConvertSingleImage = async (img, destination, width, extension) => {
   const imageClone = img.clone();
-  const imgName = SIZES[width]
+  const imgName = SIZES[width];
   // resize and save
   
   await imageClone
     .resize(width, Jimp.AUTO)
-    .quality(100)
+    .quality(80)
     .writeAsync(`${destination}/${imgName}.${extension}`);
 
   // convert to webp
-  await convertToWebp(img, destination, imgName, extension)
-}
+  await convertToWebp(img, destination, imgName, extension);
+};
 
 const resize = async (filePath, destination, extension) => {
-  const img = await Jimp.read(filePath)
-  let files = []
+  const img = await Jimp.read(filePath);
+  let files = [];
   Object.keys(SIZES).forEach(key => {
     try {
-      files.push(resizeAndConvertSingleImage(img, destination, Number.parseInt(key), extension))
+      files.push(resizeAndConvertSingleImage(img, destination, Number.parseInt(key), extension));
     } catch (e) {
-      throw new Error(e)
+      throw new Error(e);
     }
-  })
-  await Promise.all(files)
-}
+  });
+  await Promise.all(files);
+};
 
 console.log(process.env.MESSAGE_QUEUE);
 const app = new MicroMQ({
-  name: 'convert',
+  name: "convert",
   rabbit: {
     url: process.env.MESSAGE_QUEUE
   },
 });
 
-app.post('/convert', async (req, res) => {
+app.post("/convert", async (req, res) => {
   const {path, extension} = req.body.file;
-  const destination = req.body.file.destination
-  const resizePromise = resize(path, destination, extension)
+  const destination = req.body.file.destination;
+  const resizePromise = resize(path, destination, extension);
   resizePromise.then(() => {
-    console.log('Images were successfully saved!');
-  })
+    console.log("Images were successfully saved!");
+  });
   
   // TODO: simplify
   res.json({
